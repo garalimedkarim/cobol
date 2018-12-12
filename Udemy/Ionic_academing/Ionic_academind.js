@@ -18,8 +18,10 @@ HTML&CSS
 	2)install Ionic and Cordova:
 		> sudo npm install ionic cordova -g
 	3)Start new Project:
-		> ionic start firstapp --type=ionic-angular
-		> tabs
+//		> ionic start firstapp --type=ionic-angular
+//		> tabs
+		> ionic start firstapp
+		> tabs | super | blank | ... (default template) 
 		
 7.Creating our First Ionic2 Project and App:
 
@@ -198,7 +200,8 @@ II-Mastering the Basics:
 	ionViewWillLeave : Page is about to leave and become inactive
 	ionViewDidLeave: Page finished leaving and become inactive
 	
-	#good_article: https://blog.ionicframework.com/navigating-lifecycle-events/
+	#good_article: 
+	https://blog.ionicframework.com/navigating-lifecycle-events/
 18.The Page Lifecycle in Action:
 	these method are defined without importing any thing
 	There is difference between Angular routing and Ionic Routing:
@@ -422,7 +425,7 @@ the template is loaded before ionViewDidLoad
 onAddToFavorites(){
   let alert = this.alertCtrl.create({
 
-  title: 'Add to favorites',
+	title: 'Add to favorites',
   message: 'Do you want to add this quote to favorites?',
   buttons: [
 	{
@@ -974,6 +977,7 @@ Tap,Press,Panned,Swiped
 creating #components/:
 #components/touch-event-component.ts:
 Normal component which we are goind to invoke by its selector in another template of a Page.
+We don't need to declare this component in entryComponent because we are not going to call it in the stack of pages.
 
 12.Time to Practice - Components - Problem:
 13.Time to Practice - Components - Solution
@@ -1985,7 +1989,161 @@ xx.test2 : correction of camera plugin (just copy the code of the doc)
 
 21.Using a Native Device Feature The File System to manage Files
 //Stocking photos taked by the camera.
+> ionic cordova plugin add cordova-plugin-file
+> npm install --save @ionic-native/file
 
+FILE PLUGIN:
+	this.file.externalRootDirectory => Stockage/
+	Default Stock Photo: Stockage/Android/data/io.starter.ionic/cache
+	
+	#add-plase.ts: //Storing Picture File into Stockage/AwesomePlaces/:
+	  onTakePhoto(){
+		const options: CameraOptions = {
+		  quality: 100,
+		  destinationType: this.camera.DestinationType.FILE_URI,
+		  encodingType: this.camera.EncodingType.JPEG,
+		  mediaType: this.camera.MediaType.PICTURE
+		}
+		
+		this.camera.getPicture(options).then((imageData) => {
+		  //  let base64Image = 'data:image/jpeg;base64,' + imageData;
+		  //  this.imageUrl = base64Image;
+		 this.imageUrl = imageData;
+		 this.file.createDir(this.file.externalRootDirectory,'AwesomePlaces',true)
+		 .then(_=>{
+		  let path = this.imageUrl;
+		  var filePath = path.substring(0, path.lastIndexOf("/") + 1);
+		  var fileName = path.substring(path.lastIndexOf("/") + 1, path.length);
+
+		  this.file.moveFile(filePath,fileName,this.file.externalRootDirectory+"AwesomePlaces","aaaaa4.jpeg")
+		  .then((data: Entry)=>{
+			this.imageUrl = data.nativeURL;
+			alert(data.nativeURL);
+		  })
+		  .catch((err:FileError)=>{
+			this.imageUrl ='';
+			// this.file.removeFile(filePath,fileName); //Camera cleanup will do this job
+		  })
+		  // this.imageUrl = this.file.externalRootDirectory+"AwesomePlaces/"+"aaaaa4.jpeg";
+		  this.camera.cleanup();
+
+		 })
+		 .catch( err => alert('Error Create Directory'));
+		 
+		}, (err) => {
+		  alert("Error when saving picture...");
+		});
+
+	  }	
+21.5 Using Cordova plugin to create a Gallery Album and save on it my picture:
+	https://github.com/terikon/cordova-plugin-photo-library
+	
+22.Using the Device Storage:Setting and Getting Data
+	Add Injectable() to service => we are going to inject some dependencies in this service.
+	Ionic Storage is installed by default in ionic, we have only to import it in the concerned class:
+		import { Storage } from '@ionic/storage';
+		constructor(storage: Storage){}
+		
+	Using Ionic Storage (get/set data)
+	
+	#home.ts
+	//getting from storage
+	loadPlaces(){
+			 console.log("loadPlaces");
+	-        return this.places.slice();
+	+        // this.places = this.storage.get("places");
+	+
+	+        return new Promise((resolve, reject) => {
+	+            this.fetchPlaces()  
+	+            .then( (places: Place[]) => {
+	+                this.places = places != null ? places : [];
+	+                resolve(this.places.slice());
+	+                },
+	+                msg => {
+	+                    this.places = [];
+	+                    reject(this.places.slice());
+	+                }
+	+            );
+	+          });
+	+
+	+        // return this.places.slice();
+	+    }
+
+	//setting in storage
+	this.storage.set('places',this.places)
+	.then()
+	.catch(err=>{
+		this.places.splice(this.places.indexOf(place),1); 
+	})
+	
+23.Deleting Stored Data and Files:
+    deletePlace(index:number){
+        console.log("deletePlace");
+        let tempPlaces = this.places.slice();
+        tempPlaces.splice(index,1);
+        this.storage.set("places",tempPlaces)
+        .then(_=>{
+            this.removeFile(this.places[index],index)
+        })
+        .catch(err=>{
+            alert('error when deleting');       
+        })
+    }
+
+    private removeFile(place: Place,index:number){
+        let path = place.imageUrl;
+        let filePath = path.substring(0, path.lastIndexOf("/") + 1);
+        let fileName = path.substring(path.lastIndexOf("/") + 1, path.length);
+        this.file.removeFile(filePath,fileName)
+        .then(_=>{
+            this.places.splice(index,1);
+            alert('removed file');
+        })
+        .catch(err=>{
+            this.storage.set("places",this.places);
+            alert("err while removing file");
+        });
+    }
+
+24.Fixing the fetching of Data:
+	//just renaming fileName before storing file
+25.How to Debug
+	//Cordova docs
+26.Module Summary
+
+IX- Deploy:
+X- Course RoundUp:
+XI- Tips & Tricks:
+	1.Changing the back button text
+	2.Changing Application Wide-Setting
+		//General Config of the App like backButtonText, PageTransition, etc ...
+		https://ionicframework.com/docs/api/config/Config/
+		 IonicModule.forRoot(MyApp, {
+			  backButtonText: 'Go Back',
+			  iconMode: 'ios',
+			  modalEnter: 'modal-slide-in',
+			  modalLeave: 'modal-slide-out',
+			  tabsPlacement: 'bottom',
+			  pageTransition: 'ios-transition'
+			}, {}
+		  )],		
+	3.Find out which Platform You're Running On
+		using plateform native plugin (already included)
+		
+	4.Find out which Screen Orientation You're Running On
+		platefrom also contains height,width,isLandscape,isProtrait
+
+XII- Angular Recap:
+XIII-Updating to Ionic 3 & Ionic Native 3:
+	
+
+	
+
+#Using Cordova Plugins directly:
+	//in the top of the file after the imports add:
+	declare var cordova;
+	//in the file call plugins with
+	cordova.plugins.photoLibrary
 
 pre
 Text:
@@ -2238,7 +2396,7 @@ background geolocation It (not free, solution payante)
 Bug ionic serve:
 	"ionic:serve": "ionic-app-scripts serve"
 
-=MATERIAL:
+#MATERIAL:
 1) npm install --save @angular/material @angular/animations @angular/cdk
 
 2) #app.module.ts
@@ -2282,3 +2440,427 @@ Ionic Animations:
 CUSTOM SPLASH SCREEN IONIC : 
 	https://www.youtube.com/watch?v=dPUmskG_-y0
 	https://www.youtube.com/watch?v=_DdqcjmHOHQ
+
+
+Ionic 3 Chat
+	Search Google : Ionic 3 Chat
+	https://www.djamware.com/post/5a629d9880aca7059c142976/build-ionic-3-angular-5-and-firebase-simple-chat-app
+
+Ionic 3 Fireabase PhoneNumber Authentication:
+	Firebase Console> new project
+	Add Firebase to your Android app
+		Generate "Debug signing certificate SHA-1":
+			>keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android -keypass android
+			=> take SHA-1 certificate and pas it into firebase console interface in "Debug signing certificate SHA-1" field
+		Download google-services.json into IonicProject root folder
+		
+	>ionic cordova plugin add cordova-plugin-firebase-authentication --variable FIREBASE_AUTH_VERSION=version
+	>npm install --save @ionic-native/firebase-authentication
+		
+#Failed Tuto: Ionic Firebase PhoneNumber Authentication 2: (Failed at last)
+https://www.youtube.com/watch?v=3tlSUMsEqAA&t=319s
+	>ionic start app2PhoneNumber tabs
+	>ionic cordova run android
+	#config.xml modify app widget id
+		<widget id="tunisieWebPro.karimation.phoneNumber2" version="0.0.1" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">
+	Firebase Console> new Project
+	Add Firebase to your Android app
+		1)set Android package name: "tunisieWebPro.karimation.phoneNumber2"
+		2)generate certificate:
+			>keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android -keypass android
+		3)download google-service.json & put it into ionic project root folder
+		
+	Firebase Console> enable phoneNumber authentication
+	
+	>ionic cordova plugin add cordova-plugin-firebase-authentication
+	>npm install --save @ionic-native/firebase-authentication
+	 
+	>npm install --save firebase
+	#app.module:
+		import * as firebase from 'firebase';
+		config = {...};
+		firebase.initializeApp(config);
+	
+	#Bug: File google-services.json is missing.
+	Solution:
+		#config.xml
+			<platform name="android">
+			 ++ <resource-file src="google-services.json" target="app/google-services.json" />
+			</platform>
+			Similar Doc:
+				https://github.com/chemerisuk/cordova-support-google-services#installation
+
+#Sucess Tuto : Integrating Phone number authentication using AccountKit | Ionic 2 | Ionic 3 
+	https://www.youtube.com/watch?v=sTznJ64Qa_k
+	https://codesundar.com/ionic-accountkit-integration/
+	
+APP Id = 1858712310851284
+Client Token = 58a8489a23980d8a18f45a19d8b9ccd0
+APP NAME = Ionic2PhoneNumber
+
+ionic cordova plugin add cordova-plugin-accountkit --save \
+   --variable APP_ID="1858712310851284" \
+   --variable APP_NAME="Ionic2PhoneNumber" \
+   --variable CLIENT_TOKEN="58a8489a23980d8a18f45a19d8b9ccd0" \
+   --variable API_VERSION="v1.1"
+
+#Tuto:Login with Facebook using Cordova | PhoneGap
+	https://www.youtube.com/watch?v=e_24V2UeUN4
+	
+	cle de hashage = zY00cczs2SG28RTn1bZQvsCftvI=
+
+	ionic cordova plugin add cordova-plugin-facebook4 --save --variable APP_ID="1858712310851284" --variable APP_NAME="Ionic2PhoneNumber"
+
+#Tuto: Integrating Facebook login with ionic 2 / 3 | Ionic Tutorial
+	https://www.youtube.com/watch?v=UZf9VeLpVdA
+
+#Tuto Not Realized: Ionic Firebase Phone Authentication
+	https://javebratt.com/firebase-phone-authentication/
+
+#Tutorial: Photo's Text Recognizing
+	https://www.youtube.com/watch?v=NF_nnoA0aXM
+I- Installation
+	>npm i @ngx-progressbar/core 
+	>npm i (Camera Plugin)
+	>npm i Tesseract
+
+Adding this code after </platform> close in #config.xml:
+    <edit-config file="*-Info.plist" mode="merge" target="NSCameraUsageDescription">
+        <string>We need fresh images for OCR</string>
+    </edit-config>
+    <edit-config file="*-Info.plist" mode="merge" target="NSPhotoLibraryUsageDescription">
+        <string>We can also scan your library images</string>
+    </edit-config>
+
+II- Take Photo Code:
+  getPicture(source: PictureSourceType){
+    
+    const options: CameraOptions = {
+      quality: 100,
+      destinationType: this.camera.DestinationType.DATA_URL,
+      sourceType:source,
+      // allowEdit: true,
+      saveToPhotoAlbum:true,
+      correctOrientation:true,
+      encodingType: this.camera.EncodingType.JPEG,
+      mediaType: this.camera.MediaType.PICTURE
+    }
+    
+    this.camera.getPicture(options).then((imageData) => {
+     // imageData is either a base64 encoded string or a file URI
+     // If it's base64 (DATA_URL):
+      this.selectedImage = 'data:image/jpeg;base64,' + imageData;
+    }, (err) => {
+     // Handle error
+    });
+  }
+
+#Devdactic IonicAcademy Magnific Tutorials:
+	#Ionic Tracking Location
+		https://devdactic.com/ionic-location-tracker-map-track/
+
+	#Creating Image paint + Saving Images:
+		https://www.youtube.com/watch?v=igJFPu6RrJ0
+
+	#Infinite Scroll + Virtual Scroll:
+		https://youtu.be/FnTKqDT0e5A
+	#Store Files with Firebase:
+		https://devdactic.com/store-files-firebase-storage-ionic/
+	#Ionic JWT Authentication With Node Server:
+		https://devdactic.com/jwt-authentication-ionic-node/
+	#Ionic Online/Offline Mode balancing:
+		https://devdactic.com/ionic-4-offline-mode/
+	#Ionic Image Slides:
+		https://devdactic.com/dynamic-ionic-4-slides/
+	#Image Capture & Store & Upload:
+		https://devdactic.com/ionic-4-image-upload-storage/
+	#Ionic AngularFire Firebase
+		https://devdactic.com/ionic-4-firebase-angularfire/
+	#Ionic Login Flow - Ionic 4 Routing 
+		https://devdactic.com/ionic-4-login-angular/
+	#Authorisation Headers with Ionic using HTTP Interceptor and Storage
+		https://www.youtube.com/watch?v=vHoNOpfDdNQ
+	#How to Publish a Custom Ionic Module With NPM
+		https://www.youtube.com/watch?v=I3whfQPT97M
+	#Custom Ionic Selector Wheel Picker:
+		https://www.youtube.com/watch?v=hFqeTU1AS_Y
+	#Swipeable Tabs Navigation With Ionic
+		https://www.youtube.com/watch?v=xtw_fMk1ZNU
+	#Combine Ionic Side Menu + Tabs Naviguation
+		https://www.youtube.com/watch?v=PDTV2YKJ0r0
+	#Ionic FaceBook Login:
+		https://www.youtube.com/watch?v=Fw46diR8rAs
+	#Ionic Media Streaming Live(Video & Audio)
+		https://www.youtube.com/watch?v=AyS3uw7HZOM
+	#Ionic Tags Input (add tag)
+		https://www.youtube.com/watch?v=2pXxaVLrWaM
+	#Accordion List with Ionic
+		https://www.youtube.com/watch?v=cH33gmOHJMU
+	#Ionic Node RealTime Chat
+		https://www.youtube.com/watch?v=MGjRiinm67o&t=805s
+	#Ionic Animations
+		https://youtu.be/8pOsJDZbJk0
+	#Ionic Image Filter Share etc
+		https://www.youtube.com/user/saimon1924/search?query=Image
+	#Dynamic Theme Your App
+		https://devdactic.com/dynamic-theming-ionic/
+	#Ionic Use Font Awesome Dynamic rotation:
+		https://youtu.be/Z2v5U5AMIfo
+		
+Ionic Native Plugins:
+
+AES256: To Encrypt password
+
+#StoreActions & MyApps
+	Code Push: Update Your App in store Easly from Local.
+	App Update: App auto update
+	https://www.youtube.com/watch?v=866PN-ccfm4&t=903s
+	App Rate: The AppRate plugin makes it easy to prompt the user to rate your app, either now, later, or never.
+	Launch Review : Rate App
+	Market: open AppStore/PlaySotre
+	App Availability: check if an app is already installed.
+
+#ADS
+	Appodeal
+	ADMob Free
+	AdMob Plus
+	AdMob Pro
+
+#Bar Scanner
+	Barcode Scanner
+	ZBar: scan 2d barcodes.
+
+#Bluetooth
+	BLE This plugin enables communication between a phone and Bluetooth Low Energy (BLE) peripherals.
+	Blink Up: clignoter
+	BluetoothLe
+	Bluetooth
+	StarPRNT: Bluetooth
+
+#Device Info & Access:
+	Device: isVirtual,serialNumber,uuid,platform
+	Extended device Information: memory, cpu, free storage, 
+	Globalization: provides user language,locale, timezone
+	Mobile Accessibility
+	Network: onConnect(),onDisconnect(),type === 'wifi'
+	Network Interface: getIPAddress
+	Uid: get IMEI,etc in Android only
+	Unique Device ID: produce unique device ID
+	Uptime: provides the time spent in milliseconds since boot (uptime).
+	Battery Status.
+	App Version: get App version
+	Contacts: Access and manage Contacts on the device.
+		https://github.com/janpio/ionic-native-contacts
+	SIM: get info from SIM card
+	SMS:
+	Call Directory
+	Call Log
+	
+#Device sensors 
+	#enable/disable settings 
+	Open Native Settings: open native interface of wifi,date,about,etc ...
+	Location Accuracy : enable geolocation with a popup without leaving the app.
+	Sensors: enables sensors on Android devices
+	App Preferences: get/add App Preferences
+	Android Permissions: Check Camera Permission etc
+	#using sensors:
+	Flashlight: torche
+	Vibration
+	Camera Preview
+	Camera
+	Base64 To Gallery:This plugin allows you to save base64 data as a png image into the device.
+	Call Number
+	Base64: encode base64 of any file,
+	Brightness: control display brightness
+	App Minimize: Hide (reduce) the App in Android Devices.
+	
+#GeoLocation
+	Native Geocoder: (lat,lan)=>city and vice versa
+	Geofence: detect enter in zone
+	Geolocation
+	Background Geolocation
+	Google Maps
+	Google Nearby
+	Gyroscope: Read Gyroscope sensor data
+	Device Motion: allows the users to gather the acceleration of the device along the x, y and z axes.
+	Device Orientation: getCurrentHeading()
+	Diagnostic: Checks whether device hardware features are enabled or available to the app, e.g. camera, GPS, wifi.
+	Launch Navigator: Lanch Google Map with destination options from Manchester to Menister for exple.
+	Location Accuracy: enable location directly from the App.
+	Pedometer: pedestrian counting meter moves
+	Stepcounter: Android only.
+	Background Fetch: iOS only
+	
+#App Native Styling
+	Header Color: Android multitask view
+	Native Page Transitions
+	Dialogs: access and customize the device native Alerts (exple: this.dialogs.alert('Hello world'))
+	Spinner Dialog: native spinner
+	Status Bar: status bar is the bar of the top bar in Android it can be show/hidden.
+	Action Sheet:
+	Calendar: This plugin allows you to add events to the Calendar of the mobile device.
+	3dTouch: ability to keep your finger in the screen.
+	Toast
+	Splash Screen
+
+#App Behaviour in the Device
+	Insomnia: Prevent the screen of the mobile device from falling asleep.
+	Background Mode: prevent the app from going to sleep while in background.
+	Andrid Ful Screen: full screen experience.
+	Autostart: app for ANdroid
+
+#Screen Native
+	Keyboard: show/hide
+	Native Keyboard (paid)
+	Clipboard (copy/paste buttons)
+	Screen Orientation: set/lock the screen orientation.
+	Screenshot: capture a screen shot
+	
+#Files & Documents
+	File Opener: open a file by its default application
+	File Path
+	File Transfer: upload/download files
+	iOs Document Picker
+	iOS File Picker
+	Chooser: file
+	Zip: A Cordova plugin to unzip files in Android and iOS.
+	File:This plugin implements a File API allowing read/write access to files residing on the device.
+	File Chooser
+	File Encryption
+	Document Viewer: offers a slim API to view PDF files.
+	
+#Firebase & other DB
+	Firebase
+	Firebase Authentication
+	FCM:Provides basic functionality for Firebase Cloud Messaging
+	Couchbase Lite: a NoSQL Database middleware
+
+#Storage
+	Native Storage
+	Secure Storage
+	SQLite
+	Sqlite Db Copy
+	SQLite Porter: import/export a SQLite DB in JSON or SQL
+	
+#Print Html Content
+	Printer: Prints documents or HTML rendered content.
+	Hot Code Push: push html css js
+
+#HTTP
+	HTTP 
+	User Agent:provides functions to set the HTTP user-agent header.
+	HTTPd
+
+#Images
+	Image Picker
+	Image Resizer
+	Photo Library: allows access to photos from device by url
+	Photo Viewer
+
+#Browsering
+	Browser Tab: open URL on the device browser.
+	In App Browser: open an URL inside a browser inside the App.
+	Themable Browser
+	Safari View Controller
+	Deeplinks: links in browser that open our App 
+
+
+#Authentication & Social
+	Firebase Authentication
+	MS ADAL: Microsoft Authentication
+	Line Login
+	Linkedin
+	Facebook: authentication
+	Fingerprint AIO: authentication
+	Google Plus: auth
+	Twitter Connect
+	Social Sharing
+	Android Fingerprint Auth:
+
+#Notification
+	Badge: set badge in the icon of the App.
+	Push
+	Local Notification
+	Phonegap Local Notification
+	One Signal 
+
+#Audio & Video:
+	Media: record and play back audio files on a device.
+	Media Capture:
+	Music Controls
+	Native Audio
+	Streaming Media: stream audio and video in a fullscreen.
+	Video Player
+	Video Editor
+	Youtube Player
+	AndroidExoPlayer: online player
+	DB Meter: Listen sound decibel
+	RewardVideo
+	
+#Payment:
+	Card IO 
+	Stripe:
+	AliPay: payement
+	Braintree: payement
+	Apple Wallet : A Cordova plugin that enables users from Add Payment Cards to their Apple Wallet.
+Apple Pay
+	PayPal
+
+#Text Speech
+Speech Recognition
+Text to Speech
+ABBYY Real-Time Recognition: Read Text from Camera
+SpeeckKit
+TextHelper
+
+#PRO: This plugin enables Ionic Pro services like live updates and error monitoring.
+
+Email Composer: send email
+QQSDK
+QR Scanner
+
+in App Purchase
+In App Purchase2
+
+Pin Check
+Pin Dialog
+PowerManagement
+
+Keychain:
+
+Class Kit: iOs
+CleverTap: wraps CleverTap SDK for Android and iOS
+App Center Analytics: App Center Analytics helps you understand user behavior and customer engagement to improve your app.
+Crashlytics: API for interacting with the Crashlytics kit.
+Answers: API for interacting with the Answers kit.
+Mixpanel: statistic platform
+
+Cloud Settings
+
+Health
+Health Kit
+
+NFC: read/write NFC tags, send/receive data with NFC device
+OpenALPR: car serie recognizing
+Touch ID
+Web Intent
+Web Server
+Serial: serial connection
+BranchIo
+
+
+
+#SMS API
+	num verify
+
+#Ionic Deployement:	
+	Mobile Best Deployement Tool on playStore and AppStore:
+		Fabric Mobile: not verified
+		FastLane: Most Popular
+			Google Conferance about fastlane:
+				https://www.youtube.com/watch?v=scfOk5SgrKU
+			Go to the "How It Works" in this Officiel Website:
+				https://fastlane.tools/
+
+#Ionic Theming:
+	https://www.youtube.com/watch?v=RVh6nngPuNw

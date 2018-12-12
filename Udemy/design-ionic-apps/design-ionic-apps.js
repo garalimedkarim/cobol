@@ -23,10 +23,7 @@ I-Getting Started:
     font-family: OpenSans;
     src: url('../assets/fonts/Open-sans.woff2') format('woff2');
 }
-
-*{
-    font-family: OpenSans;
-}
+// OpenSans To Use inside the App
 
 5.Changing Pages: 
 //just create a tab project and renaming pages to video,news and music
